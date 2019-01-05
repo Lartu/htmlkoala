@@ -1,0 +1,8 @@
+#!/bin/bash
+if ! [ -x "$(command -v php)" ]; then
+  echo "Error: PHP is not installed. HTMLKoala requires PHP to run."
+  echo "Please install PHP and try again."
+  exit 1
+else
+	php koala.php
+fi
