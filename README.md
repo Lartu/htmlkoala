@@ -1,4 +1,4 @@
-# htmlkoala
+# 🐨 HTMLKoala
 HTML preprocessor. This readme is by no means well written nor finished.
 
 # How to Use
