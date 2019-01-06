@@ -1,21 +1,21 @@
 <?php
 	//Constants
-	$version = "1.0";
+	$version = "1.1";
 	$builddir = "htmlkoala_build";
 	
 	//Start HTMLKoala
 	echo "\033[1;36mHTMLKoala $version\033[0m, by Martín del Río\n";
 	if(count($argv) < 2){
-		error("Usage \033[1;37mhtmlkoala <site root directory>\033[0m"); //TODO
+		error("Usage \033[1;37mhtmlkoala <site root directory>\033[0m");
 	}
 	$root = $argv[1];
 	
 	//Check if directory is valid
 	if(!file_exists($root)){
-		error("No existe"); //TODO
+		error("The requested directory doesn't exist.");
 	}
 	if(!is_dir($root)){
-		error("Requiero un directorio");
+		error("$root is not a directory.");
 	}
 	
 	//Create Build Directory
@@ -23,36 +23,60 @@
 	exec("mkdir -p $builddir");
 	//Empty Build Directory
 	exec("rm -rf $builddir/*");
+	
+	//Load constants file
+	$constants = [];
+	echo "- Loading constants.koala...\n";
+	if(file_exists("constants.koala")){
+		$lines = explode("\n", file_get_contents("constants.koala"));
+		foreach($lines as  $linenum => $line){
+			$tokens = explode(" ", $line, 2);
+			if(count($tokens) < 2){
+				error("Malformed constant on line " . ($linenum + 1) . " of constants.koala");
+			}
+			$constants[$tokens[0]] = $tokens[1];
+		}
+		echo "- Found " . count($constants) . " constant(s).\n";
+	}else{
+		echo "\t";
+		warning("Constants.koala not found");
+	}
+	
 	//Get all files in directory
 	$files = scandir(".");
 	//Copy site to build directory
 	foreach($files as $file){
-		if($file == "." || $file == ".." || $file == $builddir){
+		if($file == "." || $file == ".." || $file == $builddir || $file == "constants.koala"){
 			continue;
 		}
 		echo "- Copying $file to $builddir...\n";
 		exec("cp -r $file $builddir");
 	}
-	
 	//Move to build directory
 	chdir($builddir);
-	//Get all files in directory
-	$files = scandir(".");
-	$dte = []; //directories to explore
-	foreach($files as $file){
-		if($file == "." || $file == ".." || $file == $builddir){
-			continue;
-		}
-		//If file is directory
-		if(is_dir($file)){
-			array_push($dte, $file);
-		}
-		//If file is file, replace @koala directives
-		else{
-			echo "- Processing $file...\n";
-			$contents = file_get_contents($file);
-			replace_contents($contents, $file);
-			file_put_contents($file, $contents);
+	
+	$dte = ["."]; //directories to explore
+	while(count($dte) > 0){
+		$dir = array_pop($dte);
+		echo "- Scanning directory '$dir'\n";
+		//Get all files in directory
+		$files = scandir($dir);
+		foreach($files as $file){
+			if($file == "." || $file == ".." || $file == $builddir){
+				continue;
+			}
+			$file = $dir . "/" . $file;
+			//If file is directory
+			if(is_dir($file)){
+				array_push($dte, $file);
+			}
+			//If file is file, replace @koala directives
+			else if(fileistext($file)){
+				echo "- Processing $file...\n";
+				$contents = file_get_contents($file);
+				replace_contents($contents, $file);
+				file_put_contents($file, $contents);
+			}
 		}
 	}
 	
@@ -75,8 +99,8 @@
 	
 	//Replace @koala directives
 	function replace_contents(&$contents, $filename){
+		global $constants;
 		$lines = explode("\n", $contents);
-		$current_dir = getcwd();
 		foreach($lines as $linenum => &$line){
 			$line = trim($line);
 			if(strlen($line) > 0 && $line[0] == "@"){
@@ -86,7 +110,7 @@
 				switch($tokens[1]){
 					case "include":
 						//Get filename of file to include
-						$fti = $tokens[2];
+						$fti = dirname($filename) . "/" . $tokens[2];
 						//Check if the file we want to include exists
 						if(!file_exists($fti)){
 							echo "\t";
@@ -97,9 +121,21 @@
 						else{
 							$line = file_get_contents($fti);
 							//Replace contents within line
-							chdir(dirname($fti));
 							replace_contents($line, $fti);
-							chdir($current_dir);
+						}
+						break;
+					case "constant":
+						//Get constant to replace
+						$constant = $tokens[2];
+						//Check if the constant has been defined
+						if(!array_key_exists($constant, $constants)){
+							echo "\t";
+							warning("Undefined constant $constant (required from $filename).");
+							$line = "<div style='background:#FFDDDD; display: inline-block; padding: 2px;'><code>$line</code></div>";
+						}
+						//Replace constant
+						else{
+							$line = $constants[$constant];
 						}
 						break;
 					default:
@@ -112,5 +148,13 @@
 			}
 		}
 		$contents = join("\n", $lines);
+	}
+	
+	function fileistext($filename){
+		// return mime type ala mimetype extension
+		$finfo = finfo_open(FILEINFO_MIME);
+
+		//check to see if the mime-type starts with 'text'
+		return substr(finfo_file($finfo, $filename), 0, 4) == 'text';
 	}
 ?>
