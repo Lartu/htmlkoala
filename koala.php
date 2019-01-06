@@ -3,6 +3,10 @@
 	$version = "1.1";
 	$builddir = "htmlkoala_build";
 	
+	//Data
+	$constants = [];
+	$variables = [];
+	
 	//Start HTMLKoala
 	echo "\033[1;36mHTMLKoala $version\033[0m, by Martín del Río\n";
 	if(count($argv) < 2){
@@ -25,7 +29,6 @@
 	exec("rm -rf $builddir/*");
 	
 	//Load constants file
-	$constants = [];
 	echo "- Loading constants.koala...\n";
 	if(file_exists("constants.koala")){
 		$lines = explode("\n", file_get_contents("constants.koala"));
@@ -99,16 +102,18 @@
 	
 	//Replace @koala directives
 	function replace_contents(&$contents, $filename){
-		global $constants;
+		global $constants, $variables;
 		$lines = explode("\n", $contents);
 		foreach($lines as $linenum => &$line){
 			$line = trim($line);
 			if(strlen($line) > 0 && $line[0] == "@"){
-				$tokens = explode(" ", $line, 3);
+				$tokens = explode(" ", $line);
 				if($tokens[0] != "@koala") continue;
 				//Directive switch
 				switch($tokens[1]){
+					//TODO check that directives receive all the parameters they need
 					case "include":
+						$tokens = explode(" ", $line, 3);
 						//Get filename of file to include
 						$fti = dirname($filename) . "/" . $tokens[2];
 						//Check if the file we want to include exists
@@ -125,6 +130,7 @@
 						}
 						break;
 					case "constant":
+						$tokens = explode(" ", $line, 3);
 						//Get constant to replace
 						$constant = $tokens[2];
 						//Check if the constant has been defined
@@ -136,6 +142,28 @@
 						//Replace constant
 						else{
 							$line = $constants[$constant];
+						}
+						break;
+					case "set":
+						//Get variable to set
+						$tokens = explode(" ", $line, 4);
+						$var = $tokens[2];
+						$variables[$var] = $tokens[3];
+						$line = "";
+						break;
+					case "get":
+						//Get variable to set
+						$tokens = explode(" ", $line, 3);
+						$var = $tokens[2];
+						//Check if the variable has been defined
+						if(!array_key_exists($var, $variables)){
+							echo "\t";
+							warning("Undefined variable $var (required from $filename).");
+							$line = "<div style='background:#FFDDDD; display: inline-block; padding: 2px;'><code>$line</code></div>";
+						}
+						//Replace variable
+						else{
+							$line = $variables[$var];
 						}
 						break;
 					default:
