@@ -6,6 +6,7 @@
 	//Data
 	$constants = [];
 	$variables = [];
+	$forced = [];
 	
 	//Start HTMLKoala
 	echo "\033[1;36mHTMLKoala $version\033[0m, by Martín del Río\n";
@@ -75,12 +76,20 @@
 			}
 			//If file is file, replace @koala directives
 			else if(fileistext($file)){
-				echo "- Processing $file...\n";
 				$contents = file_get_contents($file);
-				replace_contents($contents, $file);
-				file_put_contents($file, $contents);
+				if(replace_contents($contents, $file))
+					file_put_contents($file, $contents);
+				else
+					array_push($forced, $file);
 			}
 		}
+	}
+	
+	while(count($forced) > 0){
+		$file = array_pop($forced);
+		$contents = file_get_contents($file);
+		replace_contents($contents, $file);
+		file_put_contents($file, $contents);
 	}
 	
 	//Done, exit
@@ -102,6 +111,8 @@
 	
 	//Replace @koala directives
 	function replace_contents(&$contents, $filename){
+		$replace = true;
+		echo "- Processing $filename...\n";
 		global $constants, $variables;
 		$lines = explode("\n", $contents);
 		foreach($lines as $linenum => &$line){
@@ -111,6 +122,9 @@
 				if($tokens[0] != "@koala") continue;
 				//Directive switch
 				switch($tokens[1]){
+					case "no-overwrite":
+						$replace = false;
+						break;
 					//TODO check that directives receive all the parameters they need
 					case "include":
 						$tokens = explode(" ", $line, 3);
@@ -149,6 +163,7 @@
 						$tokens = explode(" ", $line, 4);
 						$var = $tokens[2];
 						$variables[$var] = $tokens[3];
+						echo "\tSet $var to " . $tokens[3] . "\n";
 						$line = "";
 						break;
 					case "get":
@@ -164,6 +179,7 @@
 						//Replace variable
 						else{
 							$line = $variables[$var];
+							echo "\tLooked for $var and got " . $variables[$var] . "\n";
 						}
 						break;
 					default:
@@ -176,6 +192,7 @@
 			}
 		}
 		$contents = join("\n", $lines);
+		return $replace;
 	}
 	
 	function fileistext($filename){
