@@ -124,6 +124,7 @@
 				switch($tokens[1]){
 					case "no-overwrite":
 						$replace = false;
+						$line = "";
 						break;
 					//TODO check that directives receive all the parameters they need
 					case "include":
