@@ -53,7 +53,6 @@
 		if($file == "." || $file == ".." || $file == $builddir || $file == "constants.koala"){
 			continue;
 		}
-		if(is_dir($file)) if($file[0] == ".") continue;
 		echo "- Copying $file to $builddir...\n";
 		exec("cp -r $file $builddir");
 	}
@@ -63,7 +62,6 @@
 	$dte = ["."]; //directories to explore
 	while(count($dte) > 0){
 		$dir = array_pop($dte);
-		if($dir[0] == ".") continue;
 		echo "- Scanning directory '$dir'\n";
 		//Get all files in directory
 		$files = scandir($dir);
