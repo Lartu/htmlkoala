@@ -53,7 +53,7 @@
 		if($file == "." || $file == ".." || $file == $builddir || $file == "constants.koala"){
 			continue;
 		}
-		if($file[0] == ".") continue;
+		if(is_dir($file)) if($file[0] == ".") continue;
 		echo "- Copying $file to $builddir...\n";
 		exec("cp -r $file $builddir");
 	}
