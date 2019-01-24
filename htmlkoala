@@ -4,5 +4,5 @@ if ! [ -x "$(command -v php)" ]; then
   echo "Please install PHP and try again."
   exit 1
 else
-	php koala.php $@
+	php /home/martu/htmlkoala/koala.php $@
 fi

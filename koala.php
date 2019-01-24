@@ -53,6 +53,7 @@
 		if($file == "." || $file == ".." || $file == $builddir || $file == "constants.koala"){
 			continue;
 		}
+		if($file[0] == ".") continue;
 		echo "- Copying $file to $builddir...\n";
 		exec("cp -r $file $builddir");
 	}
@@ -62,6 +63,7 @@
 	$dte = ["."]; //directories to explore
 	while(count($dte) > 0){
 		$dir = array_pop($dte);
+		if($dir[0] == ".") continue;
 		echo "- Scanning directory '$dir'\n";
 		//Get all files in directory
 		$files = scandir($dir);
@@ -182,6 +184,15 @@
 							$line = $variables[$var];
 							echo "\tLooked for $var and got " . $variables[$var] . "\n";
 						}
+						break;
+					case "timestamp":
+						$line = date("Y-m-d") . ", " . date("h:i:sa");
+						break;
+                    case "exec":
+						$tokens = explode(" ", $line, 3);
+						//Get constant to replace
+						$command = $tokens[2];
+						$line = exec($command);
 						break;
 					default:
 						echo "\t";
