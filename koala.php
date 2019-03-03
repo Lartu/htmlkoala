@@ -34,9 +34,10 @@
 	if(file_exists("constants.koala")){
 		$lines = explode("\n", file_get_contents("constants.koala"));
 		foreach($lines as  $linenum => $line){
+            if(strlen($line) < 1) continue;
 			$tokens = explode(" ", $line, 2);
 			if(count($tokens) < 2){
-				error("Malformed constant on line " . ($linenum + 1) . " of constants.koala");
+				error("Malformed constant on line " . ($linenum + 1) . " of constants.koala (" . $line . ")");
 			}
 			$constants[$tokens[0]] = $tokens[1];
 		}
@@ -50,7 +51,9 @@
 	$files = scandir(".");
 	//Copy site to build directory
 	foreach($files as $file){
-		if($file == "." || $file == ".." || $file == $builddir || $file == "constants.koala"){
+        //Hidden files are copied but not processed
+        //.git repository in the same level this script is running is not copied.
+		if($file == "." || $file == ".." || $file == $builddir || $file == "constants.koala" || $file == ".git"){
 			continue;
 		}
 		echo "- Copying $file to $builddir...\n";
@@ -66,7 +69,8 @@
 		//Get all files in directory
 		$files = scandir($dir);
 		foreach($files as $file){
-			if($file == "." || $file == ".." || $file == $builddir){
+            //Don't process hidden files
+			if($file == "." || $file == ".." || $file == $builddir || (strlen($file) > 1 && $file[0] == '.')){
 				continue;
 			}
 			$file = $dir . "/" . $file;
@@ -116,10 +120,14 @@
 		global $constants, $variables;
 		$lines = explode("\n", $contents);
 		foreach($lines as $linenum => &$line){
+			$oldLine = $line;
 			$line = trim($line);
 			if(strlen($line) > 0 && $line[0] == "@"){
 				$tokens = explode(" ", $line);
-				if($tokens[0] != "@koala") continue;
+				if($tokens[0] != "@koala"){
+					continue;
+					$line = $oldLine;
+				}
 				//Directive switch
 				switch($tokens[1]){
 					case "no-overwrite":
