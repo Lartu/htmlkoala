@@ -125,8 +125,8 @@
 			if(strlen($line) > 0 && $line[0] == "@"){
 				$tokens = explode(" ", $line);
 				if($tokens[0] != "@koala"){
-					continue;
 					$line = $oldLine;
+					continue;
 				}
 				//Directive switch
 				switch($tokens[1]){
@@ -208,6 +208,7 @@
 						break;
 				}
 			}
+			else $line = $oldLine;
 		}
 		$contents = join("\n", $lines);
 		return $replace;
